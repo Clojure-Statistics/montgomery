@@ -31,8 +31,24 @@
        values->drawdowns))
 
 (defn values->drawdown-states
+  "Seeks to classify prices or asset values into one of three states:
+  drawdown, new equity high, or recovery. First, "
   [values]
-  )
+  (loop [i 1.0
+         result []]
+    (if (< i (count values))
+      (recur (inc i)
+             (let [this (nth values i)
+                   prev (nth values (dec i))]
+               (if (>= this prev)
+                 (conj result {:state :new-equity-high
+                               :value this})
+                 ;; Find the local low.  Make sure it isn't at the end
+                 ;; or beginning, then return maps of recoveries and drawdowns
+                 (let [local-underwater-vals (take-while (fn [x] (< x this)) (nthrest values i))
+                       trough (apply min local-underwater-vals)]
+                   (if (not= j 0))))))
+      result)))
 
 (defn coll->histogram
   [coll n-bins]
