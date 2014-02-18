@@ -43,6 +43,46 @@
              (next values))
       result)))
 
+(defn- take-while-underwater-and-categorize
+  "The goal of this function is first to determine if there is
+  a drawdown starting with (second values).  If there is not a
+  drawdown present, then we know (first values) is a :new-high.
+  If there is, take from values where less than the prev high
+  water mark, (first values); these are termed 'underwater-values.'
+  From these 'underwater-values' find the minimum; this is our
+  local minimum.  Values preceding and including this point are
+  considered :drawdown. Values after are deemed :recovery."
+  [values]
+  (let [underwater-values (take-while (fn [x] (< x (first values))) (rest values))]
+    (if (seq underwater-values)
+      (let [local-min-index (.indexOf underwater-values (apply min underwater-values))]
+        (loop [result []
+               i 0]
+          (if (< i (count underwater-values))
+            (recur (conj result {(if (<= i local-min-index) :drawdown :recovery)
+                                 (nth underwater-values i)})
+                   (inc i))
+            result)))
+      [{:new-high (first values)}])))
+
+(defn values->new-highs-recoveries-and-drawdowns
+  [values]
+  (loop [result [{:new-high (first values)}]
+         this (second values)
+         prev-max (first values)
+         my-values values]
+    (if (seq my-values)
+      (let [categorized-values (take-while-underwater-and-categorize my-values)
+            n (count categorized-values)]
+        (recur (into result categorized-values)
+               (nth my-values (min (dec (count my-values)) (inc n)))
+               (max prev-max
+                    (apply max (flatten (map (fn [x] (vals x))
+                                             categorized-values))))
+               (nthrest my-values (inc n))))
+      result)))
+
+
 (defn coll->histogram
   [coll n-bins]
   (let [maximum (apply max coll)
