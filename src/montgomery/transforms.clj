@@ -2,10 +2,18 @@
   (:require [montgomery.utils :as utils]))
 
 (defn returns->values
-  ([returns] (reductions * 1.0 (map inc returns)))
+  "([returns] [seed [& returns]])
+  ----------------------------------------------------------------
+  Convert a series of returns into asset values.  If no initial
+  value is supplied, the 'seed value' will default to 100.00."
+  ([returns] (reductions * 100.0 (map inc returns)))
   ([seed [& returns]] (reductions * seed (map inc returns))))
 
 (defn values->running-maximums
+  "([values])
+  ----------------------------------------------------------------
+  Calculates the running maximum from a series of asset values.
+  Assumes the series is ordered from oldest to newest."
   [values]
   (loop [index 1.0
          result []]
@@ -15,6 +23,12 @@
       result)))
 
 (defn values->drawdowns
+  "([values])
+  ----------------------------------------------------------------
+  Calculates the percent underwater, or drawdown, defined as the
+  difference between the current asset value less the maximum of
+  all preceding asset values divided by the maximum of all
+  preceding asset values."
   [values]
   (loop [i 1.0
          result []]
@@ -25,6 +39,10 @@
       result)))
 
 (defn returns->drawdowns
+  "([returns])
+  ----------------------------------------------------------------
+  Pipes a series of returns through returns->values and then
+  through values->drawdowns."
   [returns]
   (-> returns
       returns->values
@@ -44,7 +62,9 @@
       result)))
 
 (defn- take-while-underwater-and-categorize
-  "The goal of this function is first to determine if there is
+  "([values])
+  ----------------------------------------------------------------
+  The goal of this function is first to determine if there is
   a drawdown starting with (second values).  If there is not a
   drawdown present, then we know (first values) is a :new-high.
   If there is, take from values where less than the prev high
